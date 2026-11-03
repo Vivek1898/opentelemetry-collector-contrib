@@ -7,7 +7,7 @@ import (
 	"context"
 	"strings"
 
-	"github.com/opensearch-project/opensearch-go/v4/opensearchapi"
+	"github.com/opensearch-project/opensearch-go/v5/opensearchapi"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/opensearchexporter/internal/templates"
