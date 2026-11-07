@@ -8,6 +8,7 @@ import (
 	"embed"
 	"errors"
 	"io/fs"
+	"net"
 	"net/http"
 
 	"go.opentelemetry.io/collector/component"
@@ -25,7 +26,7 @@ type remoteObserverExtension struct {
 }
 
 func (s *remoteObserverExtension) Start(ctx context.Context, host component.Host) error {
-	htmlContent, err := fs.Sub(httpFS, "html")
+	htmlContent, err := fs.Sub(httpFS, "http")
 	if err != nil {
 		return err
 	}
@@ -36,9 +37,15 @@ func (s *remoteObserverExtension) Start(ctx context.Context, host component.Host
 		return err
 	}
 
+	// ToServer does not set the server address; the endpoint is applied through
+	// ToListener. Serve on that listener so the server binds the configured
+	// endpoint instead of defaulting to :http.
+	var ln net.Listener
+	if ln, err = s.config.ServerConfig.ToListener(ctx); err != nil {
+		return err
+	}
 	go func() {
-		err := s.server.ListenAndServe()
-		if err != nil && !errors.Is(err, http.ErrServerClosed) {
+		if err := s.server.Serve(ln); err != nil && !errors.Is(err, http.ErrServerClosed) {
 			componentstatus.ReportStatus(host, componentstatus.NewFatalErrorEvent(err))
 		}
 	}()
